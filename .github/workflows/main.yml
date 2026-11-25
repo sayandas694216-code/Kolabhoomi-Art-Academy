@@ -1,11 +1,47 @@
-        - name: Generate Debug Keystore
-          run: |
-            keytool -genkeypair -v \
-              -keystore project/debug.keystore \
-              -storepass android \
-              -alias androiddebugkey \
-              -keypass android \
-              -keyalg RSA \
-              -keysize 2048 \
-              -validity 10000 \
-              -dname "CN=Android Debug,O=Android,C=US"
+
+name: Build Kolabhoomi APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Extract Project
+        run: |
+          mkdir project
+          unzip -q kolabhoomi-art-academy.zip -d project
+          DIR=$(find project -name settings.gradle.kts -printf '%h\n' | head -n 1)
+          echo "PROJECT_DIR=$DIR" >> $GITHUB_ENV
+
+      - name: Generate Debug Keystore
+        run: |
+          keytool -genkeypair -v \
+            -keystore "$PROJECT_DIR/debug.keystore" \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+
+      - name: Build APK
+        run: gradle -p "$PROJECT_DIR" assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kolabhoomi-APK
+          path: project/**/app/build/outputs/apk/debug/*.apk
