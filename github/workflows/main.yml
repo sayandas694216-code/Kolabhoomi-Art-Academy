@@ -1,0 +1,38 @@
+
+name: Build Kolabhoomi APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Extract Android Project
+        run: |
+          mkdir project
+          unzip -q "Kolabhoomi Art Academy.zip" -d project
+          find project -name settings.gradle.kts
+
+      - name: Build APK
+        run: |
+          PROJECT_DIR=$(find project -name settings.gradle.kts -printf '%h\n' | head -n 1)
+          test -n "$PROJECT_DIR"
+          gradle -p "$PROJECT_DIR" assembleDebug
+
+      - name: Download APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kolabhoomi-APK
+          path: project/**/app/build/outputs/apk/debug/*.apk
+          
